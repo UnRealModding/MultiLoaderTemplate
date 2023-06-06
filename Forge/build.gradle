@@ -3,19 +3,14 @@ plugins {
     id 'eclipse'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '5.1.+'
+    id "com.matthewprenger.cursegradle" version "1.4.0"
+    id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
 }
 
 archivesBaseName = "${mod_name}-forge-${minecraft_version}"
 
 minecraft {
     mappings channel: 'official', version: minecraft_version
-    
-    if (project.hasProperty('forge_ats_enabled') && project.findProperty('forge_ats_enabled').toBoolean()) {
-        // This location is hardcoded in Forge and can not be changed.
-        // https://github.com/MinecraftForge/MinecraftForge/blob/be1698bb1554f9c8fa2f58e32b9ab70bc4385e60/fmlloader/src/main/java/net/minecraftforge/fml/loading/moddiscovery/ModFile.java#L123
-        accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-        project.logger.debug('Forge Access Transformers are enabled for this project.')
-    }
 
     runs {
         client {
@@ -91,8 +86,31 @@ publishing {
         }
     }
     repositories {
-        maven {
-            url "file://" + System.getenv("local_maven")
+        if (ENV.NANITE_TOKEN) {
+            maven {
+                url "https://maven.nanite.dev/${SNAPSHOT ? "snapshots" : "releases"}"
+                credentials {
+                    username = "nanite"
+                    password = "${ENV.NANITE_TOKEN}"
+                }
+            }
         }
     }
 }
+
+if (ENV.CURSE_TOKEN) {
+    curseforge {
+        apiKey = ENV.CURSE_TOKEN
+        project {
+            id = project.curse_id
+            releaseType = "beta"
+            addGameVersion "Forge"
+            addGameVersion "${minecraft_version}"
+            mainArtifact(jar)
+            changelog = file("../CHANGELOG.md")
+            changelogType = 'markdown'
+        }
+    }
+}
+
+rootProject.tasks.curseforgePublish.dependsOn tasks.curseforge
