@@ -2,12 +2,16 @@ plugins {
     id 'java'
     id 'eclipse'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '5.1.+'
+    id 'net.minecraftforge.gradle' version '6.0.+'
     id "com.matthewprenger.cursegradle" version "1.4.0"
     id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
 }
 
-archivesBaseName = "${mod_name}-forge-${minecraft_version}"
+Project commonProject = parent.project("Common")
+
+apply {
+    from file("../gradle/scripts/maven.gradle")
+}
 
 minecraft {
     mappings channel: 'official', version: minecraft_version
@@ -22,21 +26,21 @@ minecraft {
             mods {
                 modClientRun {
                     source sourceSets.main
-                    source parent.project(":Common").sourceSets.main
+                    source commonProject.sourceSets.main
                 }
             }
         }
 
         server {
             workingDirectory project.file('run')
-            ideaModule "${parent..name}.${project.name}.main"
+            ideaModule "${parent.name}.${project.name}.main"
             taskName 'Server'
             property 'mixin.env.remapRefMap', 'true'
             property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
             mods {
                 modServerRun {
                     source sourceSets.main
-                    source parent.project(":Common").sourceSets.main
+                    source commonProject.sourceSets.main
                 }
             }
         }
@@ -51,7 +55,7 @@ minecraft {
             mods {
                 modDataRun {
                     source sourceSets.main
-                    source parent.project(":Common").sourceSets.main
+                    source commonProject.sourceSets.main
                 }
             }
         }
@@ -62,55 +66,16 @@ sourceSets.main.resources.srcDir 'src/generated/resources'
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    compileOnly parent.project(":Common")
+    compileOnly commonProject
 }
 
 tasks.withType(JavaCompile) {
-    source(parent.project(":Common").sourceSets.main.allSource)
+    source(commonProject.sourceSets.main.allSource)
 }
 
 processResources {
-    from parent.project(":Common").sourceSets.main.resources
+    from commonProject.sourceSets.main.resources
 }
 
 
 jar.finalizedBy('reobfJar')
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId project.group
-            artifactId project.archivesBaseName
-            version project.version
-            artifact jar
-        }
-    }
-    repositories {
-        if (ENV.NANITE_TOKEN) {
-            maven {
-                url "https://maven.nanite.dev/${SNAPSHOT ? "snapshots" : "releases"}"
-                credentials {
-                    username = "nanite"
-                    password = "${ENV.NANITE_TOKEN}"
-                }
-            }
-        }
-    }
-}
-
-if (ENV.CURSE_TOKEN) {
-    curseforge {
-        apiKey = ENV.CURSE_TOKEN
-        project {
-            id = project.curse_id
-            releaseType = "beta"
-            addGameVersion "Forge"
-            addGameVersion "${minecraft_version}"
-            mainArtifact(jar)
-            changelog = file("../CHANGELOG.md")
-            changelogType = 'markdown'
-        }
-    }
-}
-
-parent.tasks.curseforgePublish.dependsOn tasks.curseforge
