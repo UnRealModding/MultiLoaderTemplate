@@ -2,8 +2,12 @@ plugins {
     id 'fabric-loom' version '1.0-SNAPSHOT'
     id 'maven-publish'
     id 'idea'
-    id "com.matthewprenger.cursegradle" version "1.4.0"
+    id 'net.darkhax.curseforgegradle' version '1.0.14'
 }
+
+archivesBaseName = "${project.property("mod_name")}-${project.name}"
+
+Project commonProject = parent.project("Common")
 
 apply {
     from file("../gradle/scripts/maven.gradle")
@@ -14,38 +18,45 @@ dependencies {
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
-    implementation parent.project(":Common")
+    modImplementation(("com.unrealdinnerbone:Trenzalore-Fabric:${trenzalore_version}+mc${minecraft_version}"))
+    implementation commonProject
 }
 
 loom {
+    mixin {
+        defaultRefmapName = "${mod_id}.refmap.json"
+    }
     runs {
         client {
             client()
             setConfigName("Fabric Client")
             ideConfigGenerated(true)
-            vmArg("-Dmixin.debug.export=true")
+            vmArg("-Dmixin.debug.export=${project.property("enableMixinDebug")}")
             runDir("run_client")
         }
         server {
             server()
             setConfigName("Fabric Server")
             ideConfigGenerated(true)
-            vmArg("-Dmixin.debug.export=true")
+            vmArg("-Dmixin.debug.export=${project.property("enableMixinDebug")}")
             runDir("run_server")
         }
     }
 }
 
-
 processResources {
-    from parent.project(":Common").sourceSets.main.resources
-    inputs.property "version", project.version
-
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version
-    }
+    from commonProject.sourceSets.main.resources
 }
 
 tasks.withType(JavaCompile) {
-    source(parent.project(":Common").sourceSets.main.allSource)
+    source(commonProject.sourceSets.main.allSource)
+}
+
+task curseforgePublish(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
+    apiToken = ENV.CURSE_TOKEN
+    def mainFile = upload(findProperty('curse_id'), remapJar)
+    mainFile.changelog = file("../CHANGELOG.md")
+    mainFile.releaseType = "beta"
+    mainFile.changelogType = "markdown"
+    mainFile.addJavaVersion("Java 17")
 }
