@@ -15,9 +15,14 @@ archivesBaseName = "${project.property("mod_name")}-${project.name}"
 
 Project commonProject = parent.project("Common")
 
-mixin {
-    add commonProject.sourceSets.main, "${mod_id}.refmap.json"
-    config("${mod_id}.mixins.json")
+def mixinEnabled = project.property("mixinsEnabled") == "true"
+
+if(mixinEnabled) {
+    println("Mixins Enabled!")
+    mixin {
+        add commonProject.sourceSets.main, "${mod_id}.refmap.json"
+        config("${mod_id}.mixins.json")
+    }
 }
 
 minecraft {
@@ -28,8 +33,10 @@ minecraft {
             workingDirectory project.file('run')
             ideaModule "${parent.name}.${project.name}.main"
             taskName 'Client'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            if(mixinEnabled) {
+                property 'mixin.env.remapRefMap', 'true'
+                property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            }
             mods {
                 modClientRun {
                     source sourceSets.main
@@ -42,8 +49,10 @@ minecraft {
             workingDirectory project.file('run')
             ideaModule "${parent.name}.${project.name}.main"
             taskName 'Server'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            if(mixinEnabled) {
+                property 'mixin.env.remapRefMap', 'true'
+                property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            }
             mods {
                 modServerRun {
                     source sourceSets.main
@@ -57,8 +66,9 @@ minecraft {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     compileOnly commonProject
-    annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
-    implementation(("com.unrealdinnerbone:Trenzalore-Forge:${trenzalore_version}+mc${minecraft_version}"))
+    if(mixinEnabled) {
+        annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
+    }
 }
 
 tasks.withType(JavaCompile) {
