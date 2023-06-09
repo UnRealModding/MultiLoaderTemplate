@@ -10,6 +10,8 @@ archivesBaseName = "${project.property("mod_name")}-${project.name}"
 Project commonProject = parent.project("Common")
 
 def mixinEnabled = project.property("mixinsEnabled") == "true"
+def mixinDebug = project.property("enableMixinDebug") == "true"
+def fabricDataGen = project.property("fabricDataGen") == "true"
 
 apply {
     from file("../gradle/scripts/maven.gradle")
@@ -34,21 +36,21 @@ loom {
             client()
             setConfigName("Fabric Client")
             ideConfigGenerated(true)
-            vmArg("-Dmixin.debug.export=${project.property("enableMixinDebug")}")
+            vmArg("-Dmixin.debug.export=${mixinDebug}")
             runDir("run_client")
         }
         server {
             server()
             setConfigName("Fabric Server")
             ideConfigGenerated(true)
-            vmArg("-Dmixin.debug.export=${project.property("enableMixinDebug")}")
+            vmArg("-Dmixin.debug.export=${mixinDebug}")
             runDir("run_server")
         }
         data {
             inherit client
             setConfigName("Fabric Data")
-            ideConfigGenerated(project.property("fabricDataGen") == "true")
-            
+            ideConfigGenerated(fabricDataGen)
+
             vmArg("-Dfabric-api.datagen")
             vmArg("-Dfabric-api.datagen.output-dir=${commonProject.file("src/generated/resources")}")
             vmArg("-Dfabric-api.datagen.modid=${mod_id}")

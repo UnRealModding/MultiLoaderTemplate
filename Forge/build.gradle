@@ -16,6 +16,7 @@ archivesBaseName = "${project.property("mod_name")}-${project.name}"
 Project commonProject = parent.project("Common")
 
 def mixinEnabled = project.property("mixinsEnabled") == "true"
+def forgeDataGen = project.property("forgeDataGen") == "true"
 
 if(mixinEnabled) {
     println("Mixins Enabled!")
@@ -61,7 +62,7 @@ minecraft {
             }
         }
 
-        if(project.property("forgeDataGen") == "true") {
+        if(forgeDataGen) {
             data {
                 workingDirectory project.file('run')
                 ideaModule "${rootProject.name}.${project.name}.main"
