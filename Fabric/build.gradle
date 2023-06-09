@@ -44,6 +44,18 @@ loom {
             vmArg("-Dmixin.debug.export=${project.property("enableMixinDebug")}")
             runDir("run_server")
         }
+        data {
+            inherit client
+            setConfigName("Fabric Data")
+            ideConfigGenerated(project.property("fabricDataGen") == "true")
+            
+            vmArg("-Dfabric-api.datagen")
+            vmArg("-Dfabric-api.datagen.output-dir=${commonProject.file("src/generated/resources")}")
+            vmArg("-Dfabric-api.datagen.modid=${mod_id}")
+
+            runDir "build/datagen"
+
+        }
     }
 }
 
